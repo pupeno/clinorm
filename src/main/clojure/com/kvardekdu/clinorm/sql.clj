@@ -27,27 +27,34 @@
   (let [properties-object (new Properties)]
     (doseq [property properties]
       (.setProperty properties-object 
-		    (key- property)) (value- property))
-    properties-object))
+		    (key- property) (value- property))
+    properties-object)))
 
 (defn- str-concat [strs]
   (reduce str strs))
 
 (defn- jdbc-url [subprotocol subname options]
-  (let [options (str-concat (map (fn [x] (format ";%s=%s" (key- x) (value- x))) options))]
+  (let [options (str-concat (map #(format ";%s=%s" (key- %) (value- %)) 
+				 (filter #(not (nil? (second %))) options)))]
     (format "jdbc:%s:%s%s" (str- subprotocol) subname options)))
 
 (defmulti connect
   (fn [spec & rest]
     (:type spec)))
 
-(defmethod connect :derby 
+;; Connect to derby. The spec must contain:
+;;   file-name: the filename of the db.
+;; The spec may contain:
+;;   create: when true, the database will be created.
+;;   any other item will be passed as argument in the JDBC url, like :shutdown true => ;shutdown.
+(defmethod connect :derby
   ([spec default name]
      (assert (:file-name spec))  ;; TODO: add support for messages to assert.
      (println "Connecting to derby...")
      (let [subprotocol "derby"
 	   subname (:file-name spec)
-	   url (jdbc-url subprotocol subname nil)
+	   options (dissoc spec :type :file-name)
+	   url (jdbc-url subprotocol subname options)
 	   props (as-properties {:classname "org.apache.derby.jdbc.EmbeddedDriver"
 				 :subprotocol subprotocol
 				 :subname subname})
