@@ -1,0 +1,2 @@
+(add-to-list 'swank-clojure-extra-classpaths (expand-file-name "target/dependency/*" (file-name-directory load-file-name)))
+(add-to-list 'swank-clojure-extra-classpaths (expand-file-name "src/main/clojure/" (file-name-directory load-file-name)))
