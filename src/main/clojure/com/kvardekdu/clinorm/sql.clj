@@ -1,10 +1,19 @@
-(ns com.kvardekdu.clinorm.sql)
-
-(import '(java.util Properties))
+(ns com.kvardekdu.clinorm.sql
+  (:use com.kvardekdu.clinorm.util)
+  (:import (java.util Properties)
+	   (java.sql Connection)))
 
 (def connections (ref {}))
 
 (def default-connection (ref nil))
+
+(defn- get-connection [connection]
+  (dosync
+   (cond
+    (nil? connection) @default-connection
+    (contains? @connections connection) (get @connections connection)
+    (instance? Connection connection) connection
+    :else (error "Connection not found."))))
 
 (defn- str- 
   "Same as str, but keywords don't end up with a prepended ':'"
