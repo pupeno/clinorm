@@ -39,6 +39,9 @@
 (defn- str-concat [strs]
   (reduce str strs))
 
+(defn- str-join [strs del]
+  (str-concat (interpose del strs)))
+
 (defn- jdbc-url [subprotocol subname options]
   (let [options (str-concat (map #(format ";%s=%s" (key- %) (value- %)) 
 				 (filter #(not (nil? (second %))) options)))]
@@ -76,15 +79,46 @@
 ;(defmethod connect :mysql [spec]
 ;  (println "Connecting to mysql."))
 
-(defn drop-table-sql [name]
-  (format "DROP TABLE %s" name))
+(defn- get-statement [connection]
+  (.createStatement (get-connection connection)))
+
+(defn- type-to-sql-type [type]
+  (cond
+   (= type :boolean) "BIT"
+   (= type :integer) "BIGINT"
+   (= type :float) "DOUBLE"
+   (= type :decimal) "DECIMAL"
+   (= type :string) "VARCHAR"
+   (= type :date) "DATE"
+   (= type :time) "TIME"
+   (= type :timestamp) "TIMESTAMP"
+   (= type :blob) "BLOB"))
+
+(defn- option-to-sql-option [option]
+  (cond
+   (= option :auto-increment) "generated always as identity"
+   :else ""))
+
+(defn- field-to-sql [[name type & rest]]
+  (format "%s %s %s" (str- name) (type-to-sql-type type)
+	  (str-join (map option-to-sql-option rest) ",")))
+
+(defn- create-table-sql [name fields]
+  (format "CREATE TABLE %s (%s)" (str- name) (str-join (map field-to-sql fields) ",")))
+
+(defn- drop-table-sql [name]
+  (format "DROP TABLE %s" (str- name)))
+
+(defn create-table 
+  ([name fields connection]
+     (let [statement (get-statement connection)]
+       (.executeUpdate statement (create-table-sql name fields))))
+  ([name]
+     (create-table name nil)))
 
 (defn drop-table 
   ([name connection]
-     (println name connection)
-     (let [connection (get-connection connection)
-	   statement (.createStatement (get-connection connection))]
-       (println connection statement)
+     (let [statement (get-statement connection)]
        (.executeUpdate statement (drop-table-sql name))))
   ([name]
      (drop-table name nil)))
