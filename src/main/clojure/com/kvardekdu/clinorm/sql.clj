@@ -1,17 +1,14 @@
 (ns com.kvardekdu.clinorm.sql
   (:use com.kvardekdu.clinorm.util)
+  (:require [com.kvardekdu.clinorm.connections :as connections])
   (:import (java.util Properties)
 	   (java.sql Connection)))
-
-(def connections (ref {}))
-
-(def default-connection (ref nil))
 
 (defn- get-connection [connection]
   (dosync
    (cond
-    (nil? connection) @default-connection
-    (contains? @connections connection) (get @connections connection)
+    (nil? connection) @connections/default
+    (contains? @connections/all connection) (get @connections/all connection)
     (instance? Connection connection) connection
     :else (error "Connection not found."))))
 
@@ -29,8 +26,8 @@
 (defn- set-connection [connection name default]
   (dosync
    (when default
-     (ref-set default-connection connection))
-  (ref-set connections (assoc @connections name connections))))
+     (ref-set connections/default connection))
+  (ref-set connections/all (assoc @connections/all name connection))))
 
 (defn- as-properties [properties]
   (let [properties-object (new Properties)]
@@ -78,3 +75,16 @@
 
 ;(defmethod connect :mysql [spec]
 ;  (println "Connecting to mysql."))
+
+(defn drop-table-sql [name]
+  (format "DROP TABLE %s" name))
+
+(defn drop-table 
+  ([name connection]
+     (println name connection)
+     (let [connection (get-connection connection)
+	   statement (.createStatement (get-connection connection))]
+       (println connection statement)
+       (.executeUpdate statement (drop-table-sql name))))
+  ([name]
+     (drop-table name nil)))
