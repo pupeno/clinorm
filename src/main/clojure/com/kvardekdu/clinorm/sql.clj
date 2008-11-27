@@ -39,8 +39,8 @@
 (defn- str-concat [strs]
   (reduce str strs))
 
-(defn- str-join [strs del]
-  (str-concat (interpose del strs)))
+(defn- str-join [del strs]
+  (str-concat (interpose del (filter #(not (empty? %)) strs))))
 
 (defn- jdbc-url [subprotocol subname options]
   (let [options (str-concat (map #(format ";%s=%s" (key- %) (value- %)) 
@@ -92,19 +92,21 @@
    (= type :date) "DATE"
    (= type :time) "TIME"
    (= type :timestamp) "TIMESTAMP"
-   (= type :blob) "BLOB"))
+   (= type :blob) "BLOB"
+   (vector? type) (format "%s(%s)" (type-to-sql-type (first type)) (second type))))
 
 (defn- option-to-sql-option [option]
   (cond
-   (= option :auto-increment) "generated always as identity"
+   (= option :auto-increment) "GENERATED ALWAYS AS IDENTITY"
    :else ""))
 
 (defn- field-to-sql [[name type & rest]]
-  (format "%s %s %s" (str- name) (type-to-sql-type type)
-	  (str-join (map option-to-sql-option rest) ",")))
+  (str-join " " [(str- name)
+		 (type-to-sql-type type)
+		 (str-join ", " (map option-to-sql-option rest))]))
 
 (defn- create-table-sql [name fields]
-  (format "CREATE TABLE %s (%s)" (str- name) (str-join (map field-to-sql fields) ",")))
+  (format "CREATE TABLE %s (\n  %s\n)" (str- name) (str-join ",\n  " (map field-to-sql fields))))
 
 (defn- drop-table-sql [name]
   (format "DROP TABLE %s" (str- name)))
