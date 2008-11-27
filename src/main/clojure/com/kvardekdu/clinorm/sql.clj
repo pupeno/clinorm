@@ -63,7 +63,7 @@
    (= type :integer) "BIGINT"
    (= type :float) "DOUBLE"
    (= type :decimal) "DECIMAL"
-   (= type :string) "VARCHAR"
+   (= type :string) "VARCHAR(255)" ; TODO: this is a hack, it doesn't work, it doesn't let you define the number for varchar. FIXME!
    (= type :date) "DATE"
    (= type :time) "TIME"
    (= type :timestamp) "TIMESTAMP"
