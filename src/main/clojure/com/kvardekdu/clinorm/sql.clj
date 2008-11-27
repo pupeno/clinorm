@@ -1,8 +1,7 @@
 (ns com.kvardekdu.clinorm.sql
   (:use com.kvardekdu.clinorm.util)
   (:require [com.kvardekdu.clinorm.connections :as connections])
-  (:import (java.util Properties)
-	   (java.sql Connection)))
+  (:import (java.sql Connection)))
 
 (defn- get-connection [connection]
   (dosync
@@ -12,35 +11,11 @@
     (instance? Connection connection) connection
     :else (error "Connection not found."))))
 
-(defn- str- 
-  "Same as str, but keywords don't end up with a prepended ':'"
-  [obj]
-  (if (keyword? obj) (name obj) (str obj)))
-
-(defn- key- [key-value]
-  (str- (first key-value)))
-
-(defn- value- [key-value]
-  (str- (second key-value)))
-
 (defn- set-connection [connection name default]
   (dosync
    (when default
      (ref-set connections/default connection))
   (ref-set connections/all (assoc @connections/all name connection))))
-
-(defn- as-properties [properties]
-  (let [properties-object (new Properties)]
-    (doseq [property properties]
-      (.setProperty properties-object 
-		    (key- property) (value- property))
-    properties-object)))
-
-(defn- str-concat [strs]
-  (reduce str strs))
-
-(defn- str-join [del strs]
-  (str-concat (interpose del (filter #(not (empty? %)) strs))))
 
 (defn- jdbc-url [subprotocol subname options]
   (let [options (str-concat (map #(format ";%s=%s" (key- %) (value- %)) 
