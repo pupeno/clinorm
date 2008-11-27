@@ -90,8 +90,8 @@
   ([name fields connection]
      (let [statement (get-statement connection)]
        (.executeUpdate statement (create-table-sql name fields))))
-  ([name]
-     (create-table name nil)))
+  ([name fields]
+     (create-table name fields nil)))
 
 (defn drop-table 
   ([name connection]
